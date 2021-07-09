@@ -110,6 +110,14 @@ class Mailbox(models.Model):
         null=True
     )
 
+    last_id = models.IntegerField(
+        _(u"Last polling"),
+        help_text=(_("The id of the last message the was imported."
+                     "It is 1 for new mailboxes.")),
+        blank=True,
+        default=1,
+    )
+
     objects = models.Manager()
     active_mailboxes = ActiveMailboxManager()
 
@@ -410,15 +418,21 @@ class Mailbox(models.Model):
         connection = self.get_connection()
         if not connection:
             return
+        if self.type == 'imap':
+            connection.last_id = self.last_id
+
         for message in connection.get_message(condition):
             msg = self.process_incoming_message(message)
             if not msg is None:
                 yield msg
         self.last_polling = now()
+        if self.type == 'imap':
+            self.last_id = connection.last_id
         if django.VERSION >= (1, 5):  # Django 1.5 introduces update_fields
-            self.save(update_fields=['last_polling'])
+            self.save(update_fields=['last_polling', 'last_id' ])
         else:
             self.save()
+
 
     def __str__(self):
         return self.name
