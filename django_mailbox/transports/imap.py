@@ -60,9 +60,15 @@ class ImapTransport(EmailTransport):
 
 
     def _get_all_message_ids(self):
-        # Fetch all the message uids
-        max_id = self.last_id + 50 if self.last_id != 1 else '*'
-        uid_filter = '(UID {min}:{max})'.format(min=(self.last_id + 1), max=max_id)
+        # Fetch all the message uids        
+        if self.last_id != 1:
+            uid_filter = '(UID {min}:{max})'.format(
+                min=(self.last_id + 1), 
+                max=(self.last_id + 50)
+                )
+        else:
+            uid_filter = '(UID 1:*)'
+
         response, message_ids = self.server.uid('search', None, uid_filter)
         message_id_string = message_ids[0].strip()
         # Usually `message_id_string` will be a list of space-separated
